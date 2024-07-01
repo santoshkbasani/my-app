@@ -1,0 +1,29 @@
+node{
+   stage('SCM Checkout'){
+     git 'https://github.com/javahometech/my-app'
+   }
+   stage('Compile-Package'){
+    sh 'mvn clean package'
+	}
+   stage('SonarQube Analysis') {
+        def mvnHome =  tool name: 'maven-3', type: 'maven'
+        withSonarQubeEnv('sonarqube') { 
+          sh "${mvnHome}/bin/mvn sonar:sonar"
+        }
+    }
+     stage("Quality Gate Status Check"){
+          timeout(time: 1, unit: 'HOURS') {
+              def qg = waitForQualityGate()
+              if (qg.status != 'OK') {
+                  error "Pipeline aborted due to quality gate failure: ${qg.status}"
+              }
+          }
+          
+   stage('Email Notification'){
+	   mail bcc: '', body: '''Hi Welcome to Jenkins email alerts.
+
+	   Thanks,
+ 	   SantoshBasani.''', cc: '', from: '', replyTo: '', subject: 'Jenkins Job', to: 'santoshbasani@gmail.com'
+   }
+}
+ 
